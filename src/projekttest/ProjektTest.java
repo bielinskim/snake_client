@@ -22,9 +22,11 @@ import javax.swing.JTextField;
 
 public class ProjektTest {
 
+    NewGame game;
     JFrame gameFrame;
     Rendering gamePanel;
-
+    JPanel infoPanel;
+    
     String dir = "";
     Key key;
     Reading r;
@@ -35,7 +37,8 @@ public class ProjektTest {
     OutputStream out;
     BufferedReader fromKeyboard;
 
-    List<Fields> fields = new ArrayList();
+    List<Fields> snakes = new ArrayList();
+    Fields fruit;
 
     public class Fields {
 
@@ -50,16 +53,18 @@ public class ProjektTest {
     }
 
     public class Rendering extends JPanel {
+        
 
         @Override
         public void paintComponent(Graphics g) {
 
-            g.fillRect(0, 0, 495, 495);
+            g.fillRect(0, 0, 500, 500);
 
-            //fields.forEach((n) -> g.clearRect(n.x * 5, n.y * 5, 5, 5));
-            for (int i = 0; i < fields.size(); i++) {
-                g.clearRect(fields.get(i).x * 5, fields.get(i).y * 5, 5, 5);
+            //snakes.forEach((n) -> g.clearRect(n.x * 5, n.y * 5, 5, 5));
+            for (int i = 0; i < snakes.size(); i++) {
+                g.clearRect(snakes.get(i).x * 5, snakes.get(i).y * 5, 5, 5);
             }
+            g.clearRect(fruit.x * 5, fruit.y * 5, 5, 5);
         }
 
     }
@@ -88,27 +93,28 @@ public class ProjektTest {
                     String data = sb.toString().trim();
                     if (data.charAt(0) == 'i') {
 
-                        for (int j = 1; j < data.length(); j++) {
-                            i = Character.getNumericValue(data.charAt(j));
-
-                            if (xory) {
-                                x = i;
-                                xory = false;
-                            } else {
-                                y = i;
-                                xory = true;
-
-                                fields.add(new Fields(x, y));
-                                gamePanel.repaint();
-
-                            }
+                        for (int j = 1; j < data.length(); j += 4) {
+                            x = Integer.parseInt(data.substring(j, j + 2));
+                            y = Integer.parseInt(data.substring(j + 2, j + 4));
+                            snakes.add(new Fields(x, y));
                         }
+                        gamePanel.repaint();
+                    } else if (data.charAt(0) == 'f') {
+
+                        x = Integer.parseInt(data.substring(1, 3));
+                        y = Integer.parseInt(data.substring(3, 5));
+                        fruit = new Fields(x, y);
+
+                        gamePanel.repaint();
+                        
+                    // else if (setpoints)  
+                    // game.getPlayerOnePoints().setText(game.getPlayerOnePoints().getText()+"1");
                     } else {
 
                         x = Integer.parseInt(data.substring(0, 2));
                         y = Integer.parseInt(data.substring(2, 4));
-                        fields.add(new Fields(x, y));
-                        fields.remove(0);
+                        snakes.add(new Fields(x, y));
+                        snakes.remove(0);
                         gamePanel.repaint();
                     }
 
@@ -130,42 +136,6 @@ public class ProjektTest {
 
         @Override
         public void run() {
-
-//            try {
-//                    
-//                StringBuilder posToSend = new StringBuilder();
-//                
-//                Thread.sleep(50);
-//                
-//
-//                    while (true) {
-//                        
-//                        
-//                        posToSend = new StringBuilder();
-//                        if (x.length() == 1) {
-//                            posToSend.append(Integer.toString(0));
-//                        }
-//                        posToSend.append(x);
-//                        if (y.length() == 1) {
-//                            posToSend.append(Integer.toString(0));
-//                        }
-//                        posToSend.append(y);
-//                        String xy = posToSend.toString();
-//                        out.write(xy.getBytes());
-//                        out.write("\r\n".getBytes());
-//
-//                        Thread.sleep(20);
-//                    }
-//                } catch (IOException ex) {
-//                    System.err.println(ex);
-//                    //in.close();
-//                    //out.close();
-//                    //socket.close();
-//                    //server.close();
-//                    //System.exit(0);
-//                } catch (InterruptedException ex) {
-//
-//                }
         }
 
         public void sendDir(String dir) {
@@ -237,7 +207,7 @@ public class ProjektTest {
                 //new NewGame().init();
                 connectWithServer(gameName.getText(), "create");
                 menuFrame.dispose();
-                
+
             }
             if (source == joinGame) {
                 //new NewGame().init();
@@ -246,12 +216,12 @@ public class ProjektTest {
                 menuFrame.dispose();
             }
         }
-        
+
         public void connectWithServer(String name, String type) {
-            
+
             String gNameToSend;
-       
-             try {
+
+            try {
 
                 socket = new Socket("localhost", 2006);
                 System.out.println("Połączono z serwerem ...");
@@ -259,20 +229,24 @@ public class ProjektTest {
                 out = socket.getOutputStream();
                 fromKeyboard = new BufferedReader(new InputStreamReader(System.in));
 
-            
-            if(type.equals("create") && !name.equals("")) {
-                gNameToSend = "c" + name;
-                out.write(gNameToSend.getBytes());
-                out.write("\r\n".getBytes());
-            }
-            if(type.equals("join") && !name.equals("")) {
-                gNameToSend = "j" + name;
-                out.write(gNameToSend.getBytes());
-                out.write("\r\n".getBytes());
-            } else {
-                this.gameMenu();
-            } 
-            new NewGame().init();
+                if (type.equals("create") && !name.equals("")) {
+                    gNameToSend = "c" + name;
+                    out.write(gNameToSend.getBytes());
+                    out.write("\r\n".getBytes());
+                    game = new NewGame();
+                    game.init();
+                }
+                if (type.equals("join") && !name.equals("")) {
+                    gNameToSend = "j" + name;
+                    out.write(gNameToSend.getBytes());
+                    out.write("\r\n".getBytes());
+                    game = new NewGame();
+                    game.init();
+                }
+                if (name.equals("")) {
+                    this.gameMenu();
+                }
+                
             } catch (IOException e) {
 
             }
@@ -281,36 +255,89 @@ public class ProjektTest {
     }
 
     public class NewGame {
+        
+        JTextField playerOneName, playerTwoName, playerOnePoints, playerTwoPoints;
+
+        public JTextField getPlayerOnePoints() {
+            return playerOnePoints;
+        }
+
+        public JTextField getPlayerTwoPoints() {
+            return playerTwoPoints;
+        }
 
         public void init() {
 
             gameFrame = new JFrame();
             gamePanel = new Rendering();
+            infoPanel = new JPanel();
 
             gameFrame.add(gamePanel);
-            gameFrame.setSize(500, 500);
+            gameFrame.setSize(816, 539);
             gameFrame.setResizable(false);
             gameFrame.setLocationRelativeTo(null);
             gameFrame.setBackground(Color.LIGHT_GRAY);
             gameFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
             gameFrame.setVisible(true);
+            this.initInfoPanel();
+            
             key = new Key();
             gameFrame.addKeyListener(key);
             gameFrame.setFocusable(true);
-
-           
+            fruit = new Fields(100, 100);
 
             r = new Reading();
             r.start();
             s = new Sending();
             s.start();
         }
+        public void initInfoPanel() {
+            
+            
+            infoPanel = new JPanel();
+            infoPanel.setBounds(516, 0, 300, 539);
+            infoPanel.setLayout(null);
+            infoPanel.setBackground(Color.WHITE);
+            gameFrame.add(infoPanel);
+            
+            playerOneName = new JTextField("Gracz 1");
+            playerOneName.setEditable(false);
+            playerOneName.setBorder(null);
+            playerOneName.setBackground(Color.WHITE);
+            playerOneName.setFont(new Font("Lato", Font.BOLD, 20));
+            playerOneName.setBounds(516, 20, 150, 50);
+            infoPanel.add(playerOneName);
+            
+            playerTwoName = new JTextField("Gracz 2");
+            playerTwoName.setEditable(false);
+            playerTwoName.setBorder(null);
+            playerTwoName.setBackground(Color.WHITE);
+            playerTwoName.setFont(new Font("Lato", Font.BOLD, 20));
+            playerTwoName.setBounds(666, 20, 100, 50);
+            infoPanel.add(playerTwoName);
+            
+            playerOnePoints = new JTextField("0");
+            playerOnePoints.setEditable(false);
+            playerOnePoints.setBorder(null);
+            playerOnePoints.setBackground(Color.WHITE);
+            playerOnePoints.setFont(new Font("Lato", Font.BOLD, 20));
+            playerOnePoints.setBounds(536, 60, 100, 50);
+            infoPanel.add(playerOnePoints);
+            
+            playerTwoPoints = new JTextField("0");
+            playerTwoPoints.setEditable(false);
+            playerTwoPoints.setBorder(null);
+            playerTwoPoints.setBackground(Color.WHITE);
+            playerTwoPoints.setFont(new Font("Lato", Font.BOLD, 20));
+            playerTwoPoints.setBounds(686, 60, 100, 50);
+            infoPanel.add(playerTwoPoints);
+        }
 
     }
 
     private class Key extends KeyAdapter {
 
-        String oldDir = "dup";
+        String oldDir = "";
 
         @Override
         public void keyPressed(KeyEvent e) {
