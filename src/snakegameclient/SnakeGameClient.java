@@ -47,7 +47,7 @@ public class SnakeGameClient {
         int x;
         int y;
         String player;
-        
+
         public Fields(int x, int y) {
             this.x = x;
             this.y = y;
@@ -69,11 +69,11 @@ public class SnakeGameClient {
 
             //snakes.forEach((n) -> g.clearRect(n.x * 5, n.y * 5, 5, 5));
             for (int i = 0; i < snakes.size(); i++) {
-                if(snakes.get(i).player.equals("o")) {
+                if (snakes.get(i).player.equals("o")) {
                     g.setColor(playerOneColor);
                 } else {
                     g.setColor(playerTwoColor);
-                }      
+                }
                 g.fillRect(snakes.get(i).x * 5, snakes.get(i).y * 5, 5, 5);
             }
             g.clearRect(fruit.x * 5, fruit.y * 5, 5, 5);
@@ -111,10 +111,9 @@ public class SnakeGameClient {
                             for (int j = 1; j < data.length(); j += 4) {
                                 x = Integer.parseInt(data.substring(j, j + 2));
                                 y = Integer.parseInt(data.substring(j + 2, j + 4));
-                                if(x<90) {
+                                if (x < 90) {
                                     snakes.add(new Fields(x, y, "o"));
-                                }
-                                else {
+                                } else {
                                     snakes.add(new Fields(x, y, "t"));
                                 }
                             }
@@ -182,14 +181,14 @@ public class SnakeGameClient {
                             snakes.remove(0);
                             gamePanel.repaint();
                             break;
-                        default:   
+                        default:
                             break;
                     }
 
                 }
 
             } catch (IOException ex) {
-    
+
             }
 
         }
@@ -367,7 +366,7 @@ public class SnakeGameClient {
             gameFrame = new JFrame("Snake");
             gamePanel = new Rendering();
             infoPanel = new JPanel();
-            
+
             gameFrame.setSize(816, 539);
             gameFrame.setResizable(false);
             gameFrame.setLocationRelativeTo(null);
@@ -378,21 +377,21 @@ public class SnakeGameClient {
             this.initInfoPanel();
 
             key = new Key();
-            
-           
+
             fruit = new Fields(100, 100);
-            
+
             r = new Reading();
             r.start();
             s = new Sending();
             s.start();
         }
-        
+
         public void startGame() {
             gameFrame.setVisible(true);
             gameFrame.setFocusable(true);
             gameFrame.addKeyListener(key);
         }
+
         public void initInfoPanel() {
 
             infoPanel = new JPanel();
@@ -401,7 +400,7 @@ public class SnakeGameClient {
             infoPanel.setBackground(Color.WHITE);
             infoPanel.setIgnoreRepaint(true);
             gameFrame.add(infoPanel);
-            
+
             playersField = new JTextField("Gracze");
             playersField.setEditable(false);
             playersField.setBorder(null);
@@ -430,7 +429,7 @@ public class SnakeGameClient {
             playerTwoName.setBounds(650, 75, 150, 50);
             playerTwoName.setHorizontalAlignment(JTextField.CENTER);
             infoPanel.add(playerTwoName);
-            
+
             pointsField = new JTextField("Punkty");
             pointsField.setEditable(false);
             pointsField.setBorder(null);
@@ -488,6 +487,7 @@ public class SnakeGameClient {
             }
         }
     }
+
     public class MessageWindow implements ActionListener {
 
         JFrame messageFrame;
@@ -524,14 +524,14 @@ public class SnakeGameClient {
             messageField.setBounds(25, 20, 450, 50);
             messageField.setHorizontalAlignment(JTextField.CENTER);
             messagePanel.add(messageField);
-            
+
             acceptButton = new JButton("Ok");
             acceptButton.setFont(new Font("Lato", Font.BOLD, 15));
             acceptButton.setBounds(200, 85, 100, 50);
             acceptButton.addActionListener(this);
             messagePanel.add(acceptButton);
         }
-        
+
         @Override
         public void actionPerformed(ActionEvent s) {
             Object source = s.getSource();
