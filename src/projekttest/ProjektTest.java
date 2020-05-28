@@ -13,7 +13,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.JButton;
@@ -57,7 +56,7 @@ public class ProjektTest {
 
         @Override
         public void paintComponent(Graphics g) {
-            g.setColor(new Color(0, 255, 0, 128));
+            g.setColor(Color.DARK_GRAY);
             g.fillRect(0, 0, 500, 500);
 
             //snakes.forEach((n) -> g.clearRect(n.x * 5, n.y * 5, 5, 5));
@@ -128,15 +127,14 @@ public class ProjektTest {
                             switch (data.charAt(1)) {
                                 case 'e':
                                     new GameMenu().gameMenu();
-                                    new MessageWindow("Gra o podanej nazwie juz istnieje");
+                                    new MessageWindow("Gra o podanej nazwie już istnieje");
                                     break;
                                 case 'n':
                                     new GameMenu().gameMenu();
                                     new MessageWindow("Gra o podanej nazwie nie istnieje");
                                     break;
                                 case 'o':
-                                    game = new NewGame();
-                                    game.init();
+                                    game.startGame();
                                     break;
                                 default:
                                     break;
@@ -166,11 +164,7 @@ public class ProjektTest {
                 }
 
             } catch (IOException ex) {
-                //System.err.println(ex);
-//                in.close();
-//                out.close();
-//                socket.close();
-//                System.exit(0);
+    
             }
 
         }
@@ -294,6 +288,8 @@ public class ProjektTest {
                     out.write("\r\n".getBytes());
                     out.write(gNickToSend.getBytes());
                     out.write("\r\n".getBytes());
+                    game = new NewGame();
+                    game.init();
                 }
                 if (type.equals("join") && !name.equals("") && !nick.equals("")) {
                     gNameToSend = "j" + name;
@@ -302,13 +298,19 @@ public class ProjektTest {
                     out.write("\r\n".getBytes());
                     out.write(gNickToSend.getBytes());
                     out.write("\r\n".getBytes());
+                    game = new NewGame();
+                    game.init();
                 }
                 if (name.equals("") || nick.equals("")) {
-                    new MessageWindow("Wprowadz dane");
-                    this.gameMenu();
+                    in.close();
+                    out.close();
+                    socket.close();
+                    new GameMenu().gameMenu();
+                    new MessageWindow("Wprowadź dane");
                 }
 
             } catch (IOException e) {
+                new GameMenu().gameMenu();
                 new MessageWindow("Nie udało sie połączyć z serwerem");
             }
 
@@ -318,7 +320,7 @@ public class ProjektTest {
 
     public class NewGame {
 
-        JTextField playerOneName, playerTwoName, playerOnePoints, playerTwoPoints;
+        JTextField playersField, pointsField, playerOneName, playerTwoName, playerOnePoints, playerTwoPoints;
 
         public JTextField getPlayerOnePoints() {
             return playerOnePoints;
@@ -337,32 +339,35 @@ public class ProjektTest {
         }
 
         public void init() {
-
             gameFrame = new JFrame("Snake");
             gamePanel = new Rendering();
             infoPanel = new JPanel();
-
+            
             gameFrame.setSize(816, 539);
             gameFrame.setResizable(false);
             gameFrame.setLocationRelativeTo(null);
             gameFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            gameFrame.setVisible(true);
 
             gamePanel.setBounds(0, 0, 516, 539);
             gameFrame.add(gamePanel);
             this.initInfoPanel();
 
             key = new Key();
-            gameFrame.addKeyListener(key);
-            gameFrame.setFocusable(true);
+            
+           
             fruit = new Fields(100, 100);
-
+            
             r = new Reading();
             r.start();
             s = new Sending();
             s.start();
         }
-
+        
+        public void startGame() {
+            gameFrame.setVisible(true);
+            gameFrame.setFocusable(true);
+            gameFrame.addKeyListener(key);
+        }
         public void initInfoPanel() {
 
             infoPanel = new JPanel();
@@ -371,13 +376,23 @@ public class ProjektTest {
             infoPanel.setBackground(Color.WHITE);
             infoPanel.setIgnoreRepaint(true);
             gameFrame.add(infoPanel);
+            
+            playersField = new JTextField("Gracze");
+            playersField.setEditable(false);
+            playersField.setBorder(null);
+            playersField.setBackground(Color.WHITE);
+            playersField.setFont(new Font("Lato", Font.BOLD, 20));
+            playersField.setBounds(500, 25, 300, 50);
+            playersField.setHorizontalAlignment(JTextField.CENTER);
+            infoPanel.add(playersField);
 
             playerOneName = new JTextField("");
             playerOneName.setEditable(false);
             playerOneName.setBorder(null);
             playerOneName.setBackground(Color.WHITE);
             playerOneName.setFont(new Font("Lato", Font.BOLD, 20));
-            playerOneName.setBounds(516, 20, 150, 50);
+            playerOneName.setBounds(500, 75, 150, 50);
+            playerOneName.setHorizontalAlignment(JTextField.CENTER);
             infoPanel.add(playerOneName);
 
             playerTwoName = new JTextField("");
@@ -385,15 +400,26 @@ public class ProjektTest {
             playerTwoName.setBorder(null);
             playerTwoName.setBackground(Color.WHITE);
             playerTwoName.setFont(new Font("Lato", Font.BOLD, 20));
-            playerTwoName.setBounds(666, 20, 100, 50);
+            playerTwoName.setBounds(650, 75, 150, 50);
+            playerTwoName.setHorizontalAlignment(JTextField.CENTER);
             infoPanel.add(playerTwoName);
+            
+            pointsField = new JTextField("Punkty");
+            pointsField.setEditable(false);
+            pointsField.setBorder(null);
+            pointsField.setBackground(Color.WHITE);
+            pointsField.setFont(new Font("Lato", Font.BOLD, 20));
+            pointsField.setBounds(500, 150, 300, 50);
+            pointsField.setHorizontalAlignment(JTextField.CENTER);
+            infoPanel.add(pointsField);
 
             playerOnePoints = new JTextField("0");
             playerOnePoints.setEditable(false);
             playerOnePoints.setBorder(null);
             playerOnePoints.setBackground(Color.WHITE);
             playerOnePoints.setFont(new Font("Lato", Font.BOLD, 20));
-            playerOnePoints.setBounds(536, 60, 100, 50);
+            playerOnePoints.setBounds(500, 200, 150, 50);
+            playerOnePoints.setHorizontalAlignment(JTextField.CENTER);
             infoPanel.add(playerOnePoints);
 
             playerTwoPoints = new JTextField("0");
@@ -401,7 +427,8 @@ public class ProjektTest {
             playerTwoPoints.setBorder(null);
             playerTwoPoints.setBackground(Color.WHITE);
             playerTwoPoints.setFont(new Font("Lato", Font.BOLD, 20));
-            playerTwoPoints.setBounds(686, 60, 100, 50);
+            playerTwoPoints.setBounds(650, 200, 150, 50);
+            playerTwoPoints.setHorizontalAlignment(JTextField.CENTER);
             infoPanel.add(playerTwoPoints);
             infoPanel.setVisible(true);
         }
@@ -436,11 +463,12 @@ public class ProjektTest {
 
     }
 
-    public class MessageWindow {
+    public class MessageWindow implements ActionListener {
 
         JFrame messageFrame;
         JPanel messagePanel;
         JTextField messageField;
+        JButton acceptButton;
 
         public MessageWindow(String message) {
             this.init(message);
@@ -468,9 +496,23 @@ public class ProjektTest {
             messageField.setBackground(Color.DARK_GRAY);
             messageField.setForeground(Color.WHITE);
             messageField.setFont(new Font("Lato", Font.BOLD, 20));
-            messageField.setBounds(50, 50, 400, 50);
+            messageField.setBounds(25, 20, 450, 50);
+            messageField.setHorizontalAlignment(JTextField.CENTER);
             messagePanel.add(messageField);
-
+            
+            acceptButton = new JButton("Ok");
+            acceptButton.setFont(new Font("Lato", Font.BOLD, 15));
+            acceptButton.setBounds(200, 85, 100, 50);
+            acceptButton.addActionListener(this);
+            messagePanel.add(acceptButton);
+        }
+        
+        @Override
+        public void actionPerformed(ActionEvent s) {
+            Object source = s.getSource();
+            if (source == acceptButton) {
+                messageFrame.dispose();
+            }
         }
     }
 
