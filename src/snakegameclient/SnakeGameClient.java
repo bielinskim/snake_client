@@ -1,4 +1,4 @@
-package projekttest;
+package snakegameclient;
 
 import java.awt.Color;
 import java.awt.Font;
@@ -20,7 +20,7 @@ import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
-public class ProjektTest {
+public class SnakeGameClient {
 
     NewGame game;
     JFrame gameFrame;
@@ -39,16 +39,24 @@ public class ProjektTest {
 
     List<Fields> snakes = new ArrayList();
     Fields fruit;
+    Color playerOneColor = new Color(255, 0, 0, 128);
+    Color playerTwoColor = new Color(0, 0, 255, 128);
 
     public class Fields {
 
         int x;
-
         int y;
-
+        String player;
+        
         public Fields(int x, int y) {
             this.x = x;
             this.y = y;
+        }
+
+        public Fields(int x, int y, String player) {
+            this.x = x;
+            this.y = y;
+            this.player = player;
         }
     }
 
@@ -61,7 +69,11 @@ public class ProjektTest {
 
             //snakes.forEach((n) -> g.clearRect(n.x * 5, n.y * 5, 5, 5));
             for (int i = 0; i < snakes.size(); i++) {
-                g.setColor(new Color(255, 255, 255, 128));
+                if(snakes.get(i).player.equals("o")) {
+                    g.setColor(playerOneColor);
+                } else {
+                    g.setColor(playerTwoColor);
+                }      
                 g.fillRect(snakes.get(i).x * 5, snakes.get(i).y * 5, 5, 5);
             }
             g.clearRect(fruit.x * 5, fruit.y * 5, 5, 5);
@@ -96,11 +108,15 @@ public class ProjektTest {
                     switch (data.charAt(0)) {
                         case 'i':
                             // init
-
                             for (int j = 1; j < data.length(); j += 4) {
                                 x = Integer.parseInt(data.substring(j, j + 2));
                                 y = Integer.parseInt(data.substring(j + 2, j + 4));
-                                snakes.add(new Fields(x, y));
+                                if(x<90) {
+                                    snakes.add(new Fields(x, y, "o"));
+                                }
+                                else {
+                                    snakes.add(new Fields(x, y, "t"));
+                                }
                             }
                             gamePanel.repaint();
                             break;
@@ -150,14 +166,23 @@ public class ProjektTest {
                                 field.setText(String.valueOf(Integer.parseInt(field.getText()) + 1));
                             }
                             break;
-                        default:
-                            // pos
-
-                            x = Integer.parseInt(data.substring(0, 2));
-                            y = Integer.parseInt(data.substring(2, 4));
-                            snakes.add(new Fields(x, y));
+                        case 'o':
+                            // playerOnePos
+                            x = Integer.parseInt(data.substring(1, 3));
+                            y = Integer.parseInt(data.substring(3, 5));
+                            snakes.add(new Fields(x, y, "o"));
                             snakes.remove(0);
                             gamePanel.repaint();
+                            break;
+                        case 't':
+                            // playerTwoPos
+                            x = Integer.parseInt(data.substring(1, 3));
+                            y = Integer.parseInt(data.substring(3, 5));
+                            snakes.add(new Fields(x, y, "t"));
+                            snakes.remove(0);
+                            gamePanel.repaint();
+                            break;
+                        default:   
                             break;
                     }
 
@@ -390,6 +415,7 @@ public class ProjektTest {
             playerOneName.setEditable(false);
             playerOneName.setBorder(null);
             playerOneName.setBackground(Color.WHITE);
+            playerOneName.setForeground(playerOneColor);
             playerOneName.setFont(new Font("Lato", Font.BOLD, 20));
             playerOneName.setBounds(500, 75, 150, 50);
             playerOneName.setHorizontalAlignment(JTextField.CENTER);
@@ -399,6 +425,7 @@ public class ProjektTest {
             playerTwoName.setEditable(false);
             playerTwoName.setBorder(null);
             playerTwoName.setBackground(Color.WHITE);
+            playerTwoName.setForeground(playerTwoColor);
             playerTwoName.setFont(new Font("Lato", Font.BOLD, 20));
             playerTwoName.setBounds(650, 75, 150, 50);
             playerTwoName.setHorizontalAlignment(JTextField.CENTER);
@@ -460,9 +487,7 @@ public class ProjektTest {
                 s.sendDir(dir);
             }
         }
-
     }
-
     public class MessageWindow implements ActionListener {
 
         JFrame messageFrame;
@@ -518,7 +543,7 @@ public class ProjektTest {
 
     public static void main(String[] args) {
 
-        new ProjektTest().new GameMenu().gameMenu();
+        new SnakeGameClient().new GameMenu().gameMenu();
 
     }
 }
