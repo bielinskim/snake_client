@@ -12,6 +12,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
@@ -20,39 +22,76 @@ import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
+/**
+ * Klient SnakeGame
+ * @author Mateusz Bieliński
+ */
 public class SnakeGameClient {
+    
+ 
+    /**
+     * adres serwera
+     */
+    public static final String SERVER_ADDRESS = "localhost"; // 77.55.223.193    localhost
 
-    NewGame game;
-    JFrame gameFrame;
-    Rendering gamePanel;
-    JPanel infoPanel;
+    /**
+     * port tcp serwera
+     */
+    public static final int SERVER_TCP_PORT = 2006;
 
-    String dir = "";
-    Key key;
-    Reading r;
-    Sending s;
+    /**
+     * port udp klienta, na ktore beda przesylane datagramy z serwera, ustalany automatycznie
+     */
+    public int CLIENT_UDP_PORT;  // domyslnie dobierany
 
-    Socket socket;
-    InputStream in;
-    OutputStream out;
-    BufferedReader fromKeyboard;
+    public NewGame game;
+    public JFrame gameFrame;
+    public Rendering gamePanel;
+    public JPanel infoPanel;
 
-    List<Fields> snakes = new ArrayList();
-    Fields fruit;
-    Color playerOneColor = new Color(255, 0, 0, 128);
-    Color playerTwoColor = new Color(0, 0, 255, 128);
+    public String dir = "";
+    public Key key;
+    public Reading r;
+    public DatagramReading dr;
+    public Sending s;
+    
+    public Socket socket;
+    public InputStream in;
+    public OutputStream out;
+    public BufferedReader fromKeyboard;
+    public DatagramSocket dgsocket;
 
+    public List<Fields> snakes = new ArrayList();
+    public Fields fruit;
+    public Color playerOneColor = new Color(255, 0, 0, 128);
+    public Color playerTwoColor = new Color(0, 0, 255, 128);
+
+    /**
+     *  Fields - klasa ktora przechowuje wspolrzedne pojedynczego pola z planszy gry w postaci x, y - liczby od 0 do 99,
+     * + ewentualnie informacje o graczu w przypadku pol odwzorowujacych ciala wezy
+     */
     public class Fields {
 
-        int x;
-        int y;
-        String player;
+        public int x;
+        public int y;
+        public String player;
 
+        /**
+         * Pierwszy konstruktor
+         * @param x - wspolrzedna x
+         * @param y - wspolrzedna y
+         */
         public Fields(int x, int y) {
             this.x = x;
             this.y = y;
         }
 
+        /**
+         * Drugi konstruktor
+         * @param x - wpolrzedna x
+         * @param y - wspolrzedna y
+         * @param player - pierwszy/drugi gracz
+         */
         public Fields(int x, int y, String player) {
             this.x = x;
             this.y = y;
@@ -60,6 +99,9 @@ public class SnakeGameClient {
         }
     }
 
+    /**
+     * Rendering - klasa w ktorej renderowana i odswiezana jest plansza gry po kazdym zaktualizowaniu danych
+     */
     public class Rendering extends JPanel {
 
         @Override
@@ -81,14 +123,17 @@ public class SnakeGameClient {
 
     }
 
-    class Reading extends Thread {
+    /**
+     * Reading - klasa dzialajaca jako watek i sluzaca do odczytwania danych przesylanych z serwera z wykorzystaniem protokolu TCP
+     */
+    public class Reading extends Thread {
 
-        int i = 0;
-        boolean xory = true;
-        int x = 0;
-        int y = 0;
-        JTextField field;
-        String nick;
+        public int i = 0;
+        public boolean xory = true;
+        public int x = 0;
+        public int y = 0;
+        public JTextField field;
+        public String nick;
 
         @Override
         public void run() {
@@ -165,7 +210,47 @@ public class SnakeGameClient {
                                 field.setText(String.valueOf(Integer.parseInt(field.getText()) + 1));
                             }
                             break;
-                        case 'o':
+                        default:
+                            break;
+                    }
+
+                }
+
+            } catch (IOException ex) {
+
+            }
+
+        }
+    }
+
+    /**
+     * DatagramReading - klasa dzialajaca jako watek i sluzaca do odczytwania danych przesylanych z serwera z wykorzystaniem protokolu UDP
+     */
+    public class DatagramReading extends Thread {
+
+        public DatagramPacket dgpacket;
+        
+        public String data;
+        public int x = 0;
+        public int y = 0;
+
+        /**
+         * inicjalizacja buf jako bufora na dane i dgpacket do odebrania DatagramPacket
+         */
+        public DatagramReading() {
+            byte[] buf = new byte[255];
+            dgpacket = new DatagramPacket(buf, buf.length);
+        }
+        
+        @Override
+        public void run() {
+            try {
+                while (true) {
+                dgsocket.receive(dgpacket);
+                data = new String(dgpacket.getData(), 0, dgpacket.getLength());
+                
+                switch (data.charAt(0)) {
+                case 'o':
                             // playerOnePos
                             x = Integer.parseInt(data.substring(1, 3));
                             y = Integer.parseInt(data.substring(3, 5));
@@ -181,26 +266,28 @@ public class SnakeGameClient {
                             snakes.remove(0);
                             gamePanel.repaint();
                             break;
-                        default:
-                            break;
-                    }
-
                 }
-
+                }
             } catch (IOException ex) {
 
             }
-
         }
 
     }
 
-    class Sending extends Thread {
+    /**
+     * Sending - klasa do wysylania danych do serwera
+     */
+    public class Sending extends Thread {
 
         @Override
         public void run() {
         }
 
+        /**
+         *
+         * @param dir - aktualny kierunek gracza przesylany do serwera
+         */
         public void sendDir(String dir) {
             try {
                 out.write(dir.getBytes());
@@ -212,13 +299,19 @@ public class SnakeGameClient {
 
     }
 
+    /**
+     * GameMenu - klasa tworzaca menu gry
+     */
     public class GameMenu implements ActionListener {
 
-        JFrame menuFrame;
-        JPanel menuPanel;
-        JButton createGame, joinGame;
-        JTextField typeName, gameName, typeNick, nickName;
+        public JFrame menuFrame;
+        public JPanel menuPanel;
+        public JButton createGame, joinGame;
+        public JTextField typeName, gameName, typeNick, nickName;
 
+        /**
+         * inicjalizacja menu i elementow wchodzacych w jego sklad
+         */
         public void gameMenu() {
 
             menuFrame = new JFrame("Snake");
@@ -292,25 +385,37 @@ public class SnakeGameClient {
             }
         }
 
+        /**
+         *
+         * @param name - nazwa gry
+         * @param nick - nick gracza
+         * @param type - stworz gre/dolacz do gry
+         */
         public void connectWithServer(String name, String nick, String type) {
 
             String gNameToSend;
             String gNickToSend;
+            String gPortToSend;
 
             try {
 
-                socket = new Socket("localhost", 2006);
+                socket = new Socket(SERVER_ADDRESS, SERVER_TCP_PORT);
                 System.out.println("Połączono z serwerem ...");
                 in = socket.getInputStream();
                 out = socket.getOutputStream();
                 fromKeyboard = new BufferedReader(new InputStreamReader(System.in));
+                dgsocket = new DatagramSocket();
+                CLIENT_UDP_PORT = dgsocket.getLocalPort();
 
                 if (type.equals("create") && !name.equals("") && !nick.equals("")) {
                     gNameToSend = "c" + name;
                     gNickToSend = "a" + nick;
+                    gPortToSend = "p" + String.valueOf(CLIENT_UDP_PORT);
                     out.write(gNameToSend.getBytes());
                     out.write("\r\n".getBytes());
                     out.write(gNickToSend.getBytes());
+                    out.write("\r\n".getBytes());
+                    out.write(gPortToSend.getBytes());
                     out.write("\r\n".getBytes());
                     game = new NewGame();
                     game.init();
@@ -318,9 +423,12 @@ public class SnakeGameClient {
                 if (type.equals("join") && !name.equals("") && !nick.equals("")) {
                     gNameToSend = "j" + name;
                     gNickToSend = "b" + nick;
+                    gPortToSend = "p" + String.valueOf(CLIENT_UDP_PORT);
                     out.write(gNameToSend.getBytes());
                     out.write("\r\n".getBytes());
                     out.write(gNickToSend.getBytes());
+                    out.write("\r\n".getBytes());
+                    out.write(gPortToSend.getBytes());
                     out.write("\r\n".getBytes());
                     game = new NewGame();
                     game.init();
@@ -337,31 +445,52 @@ public class SnakeGameClient {
                 new GameMenu().gameMenu();
                 new MessageWindow("Nie udało sie połączyć z serwerem");
             }
-
         }
-
     }
 
+    /**
+     *  NewGame - glowna klasa sterujaca gra, utworzenie planszy gry, bocznego panelu
+     */
     public class NewGame {
 
-        JTextField playersField, pointsField, playerOneName, playerTwoName, playerOnePoints, playerTwoPoints;
+        public JTextField playersField, pointsField, playerOneName, playerTwoName, playerOnePoints, playerTwoPoints;
 
+        /**
+         *
+         * @return - zwraca obiekt JTextField przechowujacy punkty pierwszego gracza 
+         */
         public JTextField getPlayerOnePoints() {
             return playerOnePoints;
         }
 
+        /**
+         *
+         * @return - zwraca obiekt JTextField przechowujacy punkty drugiego gracza 
+         */
         public JTextField getPlayerTwoPoints() {
             return playerTwoPoints;
         }
 
+        /**
+         *
+         * @return - zwraca obiekt JTextField przechowujacy nick pierwszego gracza 
+         */
         public JTextField getPlayerOneName() {
             return playerOneName;
         }
 
+        /**
+         *
+         * @return - zwraca obiekt JTextField przechowujacy nick drugiego gracza 
+         */
         public JTextField getPlayerTwoName() {
             return playerTwoName;
         }
 
+        /**
+         * inicjalizacja okna gry, planszy gry i bocznego panelu, inicjalizacja obiektow odbierajacych i wysylajych dane od/do serwera, 
+         * inicjalizacja ustalania kierunku za pomoca strzalek na klawiaturze
+         */
         public void init() {
             gameFrame = new JFrame("Snake");
             gamePanel = new Rendering();
@@ -382,16 +511,24 @@ public class SnakeGameClient {
 
             r = new Reading();
             r.start();
+            dr = new DatagramReading();
+            dr.start();
             s = new Sending();
             s.start();
         }
 
+        /**
+         * metoda rozpoczynajaca gre na znak serwera
+         */
         public void startGame() {
             gameFrame.setVisible(true);
             gameFrame.setFocusable(true);
             gameFrame.addKeyListener(key);
         }
 
+        /**
+         *  inicjalizacja bocznego panelu z nickami i punktami graczy
+         */
         public void initInfoPanel() {
 
             infoPanel = new JPanel();
@@ -461,9 +598,12 @@ public class SnakeGameClient {
 
     }
 
-    private class Key extends KeyAdapter {
+    /**
+     * Key - klasa odpowiadajaca za wczytywanie kierunku z klawiatury
+     */
+    public class Key extends KeyAdapter {
 
-        String oldDir = "";
+        public String oldDir = "";
 
         @Override
         public void keyPressed(KeyEvent e) {
@@ -481,24 +621,35 @@ public class SnakeGameClient {
                 dir = "dup";
             }
 
-            if (oldDir != dir) {
+            if (!oldDir.equals(dir)) {
                 oldDir = dir;
                 s.sendDir(dir);
             }
         }
     }
 
+    /**
+     * MessageWindow - klasa tworzaca okienko powiadomien
+     */
     public class MessageWindow implements ActionListener {
 
-        JFrame messageFrame;
-        JPanel messagePanel;
-        JTextField messageField;
-        JButton acceptButton;
+        public JFrame messageFrame;
+        public JPanel messagePanel;
+        public JTextField messageField;
+        public JButton acceptButton;
 
+        /**
+         *
+         * @param message - tresc wiadomosci do wyswietlenia
+         */
         public MessageWindow(String message) {
             this.init(message);
         }
 
+        /**
+         *
+         * @param message - tresc wiadomosci do wyswietlenia przekazana z konstruktora
+         */
         public void init(String message) {
             messageFrame = new JFrame("Message");
             messagePanel = new JPanel();
@@ -541,6 +692,10 @@ public class SnakeGameClient {
         }
     }
 
+    /**
+     *
+     * @param args metoda main inicjalizujaca calosc
+     */
     public static void main(String[] args) {
 
         new SnakeGameClient().new GameMenu().gameMenu();
